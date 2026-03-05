@@ -1,5 +1,5 @@
 name: pilem
-description: "A new Flutter project."
+description: 'A new Flutter project.'
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:
