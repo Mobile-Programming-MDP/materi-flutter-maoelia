@@ -14,6 +14,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final ApiService _apiService = ApiService();
 
+  // List untuk menyimpan data movies yang diambil dari API (method)
   List<Movie> _allMovies = [];
   List<Movie> _trendingMovies = [];
   List<Movie> _popularMovies = [];
@@ -27,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
         .getPopularMovies();
 
     setState(() {
+      //map() mengubah setiap item JSON menjadi objek Movie menggunakan fromJson, lalu toList() mengubah hasilnya menjadi List<Movie>
       _allMovies = allMoviesData.map((json) => Movie.fromJson(json)).toList();
       _trendingMovies = trendingMoviesData
           .map((json) => Movie.fromJson(json))
@@ -44,11 +46,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
+  // Widget untuk menampilkan UI HomeScreen
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Pilem")),
+      // digunakan agar halaman bisa scroll ke bawah
       body: SingleChildScrollView(
         child: Column(
+          // crossAxisAlignment.start untuk menyusun widget secara vertikal dari kiri ke kanan
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildMoviesList("All Movies", _allMovies),
@@ -68,18 +73,20 @@ class _HomeScreenState extends State<HomeScreen> {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Text(
-            title,
+            title, //judul kategori
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
         ),
         //Menapilkan thumnail dan judul movies
         SizedBox(
           height: 200,
+          // bisa digeser ke samping
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: movies.length,
             itemBuilder: (BuildContext build, int index) {
               final Movie movie = movies[index];
+              // agar film bisa di klik dan masuk ke detail screen
               return GestureDetector(
                 onTap: () => Navigator.push(
                   context,
