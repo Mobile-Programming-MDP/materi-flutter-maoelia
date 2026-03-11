@@ -1,120 +1,90 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:pilem/models/movie.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pilem/screens/detail_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FavoriteScreen extends StatefulWidget {
   const FavoriteScreen({super.key});
 
   @override
-  State<FavoriteScreen> createState() => _Favoritescreenstate;
+  State<FavoriteScreen> createState() => _FavoriteScreenState();
 }
 
-  class _FavoriteScreenState extends State<FavoriteScreen> {
-  List<Movie> _favoriteMovies = [];
+class _FavoriteScreenState extends State<FavoriteScreen> {
+  List<Movie> _favorites = [];
 
   void _loadFavorites() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    final Set<String> keys = prefs.getKeys();
+    List<String> favList = prefs.getStringList('favorites') ?? [];
     List<Movie> favorites = [];
-    for (String key in keys) {
-      if (key.startsWith('movie_')) {
-        final String? movieJson = prefs.getString(key);
-        if (movieJson != null) {
-          Movie movie = Movie.fromJson(json.decode(movieJson));
-          favorites.add(movie);
-        }
+    for (String item in favList) {
+      try {
+        Movie movie = Movie.fromJson(json.decode(item));
+        movie.isFavorite = true;
+        favorites.add(movie);
+      } catch (e) {
+        // Handle parsing errors if any
+        print('Error parsing favorite: $e');
       }
     }
     setState(() {
-      _favoriteMovies = favorites;
+      _favorites = favorites;
     });
   }
 
-    final movies = <Movie>[];
-    for (final id in ids) {
-      final m = _movieById[id];
-      if (m != null) movies.add(m);
-    }
-    return movies;
+  @override
+  void initState() {
+    super.initState();
+    _loadFavorites();
   }
 
-  Future<void> _removeFavorite(String movieId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final ids = (prefs.getStringList('favorite_movie_ids') ?? []).toList();
-
-    ids.remove(movieId);
-    await prefs.setStringList('favorite_movie_ids', ids);
-
-    favoriteChanged.value++;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadFavorites();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F3F3),
-      body: ValueListenableBuilder<int>(
-        valueListenable: favoriteChanged,
-        builder: (context, _, __) {
-          return FutureBuilder<List<Hotel>>(
-            future: _loadFavorites(),
-            builder: (context, snap) {
-              final loading = snap.connectionState == ConnectionState.waiting;
-              final hotels = snap.data ?? const <Hotel>[];
-              final count = hotels.length;
-
-              final subtitle = loading ? "Loading..." : "$count results";
-
-              return Column(
+      appBar: AppBar(title: const Text('Favorite Movies')),
+      body: _favorites.isEmpty
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  GreenTopHeader(
-                    title: "Favorite",
-                    subtitle: subtitle,
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  Expanded(
-                    child: loading
-                        ? const Center(child: CircularProgressIndicator())
-                        : (count == 0)
-                            ? FavoriteEmptyCard(
-                                onExplore: () => mainTabIndex.value = 0,
-                              )
-                            : ListView.separated(
-                                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                                itemCount: hotels.length,
-                                separatorBuilder: (_, __) => const SizedBox(height: 16),
-                                itemBuilder: (_, i) {
-                                  final h = hotels[i];
-                                  final extra = HotelDetailExtra.byId(h.id);
-
-                                  return FavoriteHotelCard(
-                                    image: h.image,
-                                    name: h.name,
-                                    address: extra.address,
-                                    rating: h.rating,
-                                    onTap: () async {
-                                      await Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => DetailScreen(hotel: h),
-                                        ),
-                                      );
-                                      // setelah balik dari detail, refresh juga
-                                      favoriteChanged.value++;
-                                    },
-                                    onToggleFavorite: () => _removeFavorite(h.id),
-                                  );
-                                },
-                              ),
+                  // Icon(Icons.favorite_border, size: 80, color: Colors.grey),
+                  // SizedBox(height: 16),
+                  Text(
+                    'Belum ada film favorit',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                 ],
-              );
-            },
-          );
-        },
-      ),
+              ),
+            )
+          : ListView.builder(
+              itemCount: _favorites.length,
+              itemBuilder: (context, index) {
+                final Movie movie = _favorites[index];
+                return ListTile(
+                  leading: Image.network(
+                    'https://image.tmdb.org/t/p/w500${movie.posterPath}',
+                    width: 50,
+                    height: 75,
+                    fit: BoxFit.cover,
+                  ),
+                  title: Text(movie.title),
+                  subtitle: Text(movie.releaseDate),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DetailScreen(movie: movie),
+                    ),
+                  ).then((_) => _loadFavorites()),
+                );
+              },
+            ),
     );
   }
 }
