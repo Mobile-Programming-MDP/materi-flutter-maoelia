@@ -24,7 +24,7 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
         movie.isFavorite = true;
         favorites.add(movie);
       } catch (e) {
-        // Handle parsing errors if any
+        // Jika terjadi error saat parsing, kita bisa log errornya atau mengabaikannya
         print('Error parsing favorite: $e');
       }
     }
