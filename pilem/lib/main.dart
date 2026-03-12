@@ -7,6 +7,11 @@ void main() {
   runApp(const MyApp());
 }
 
+// 1. stateful untuk form, tombol interaktif, atau data yang berubah-ubah
+//    cth: counter yang bisa bertambah atau berkurang, atau form input yang bisa diisi dan dikirim
+//    animasi, scheckbox, switch
+// 2. stateless tidak menyimpan data yang berubah
+//    untuk tampilan statis, seperti teks, gambar, atau ikon yang tidak berubah
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
