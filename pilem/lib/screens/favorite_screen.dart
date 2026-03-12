@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:convert'; // mengubah json string menjadi objek dart dan sebaliknya
 import 'package:flutter/material.dart';
 import 'package:pilem/models/movie.dart';
 import 'package:pilem/screens/detail_screen.dart';

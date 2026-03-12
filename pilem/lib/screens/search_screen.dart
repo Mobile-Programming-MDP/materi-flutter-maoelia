@@ -3,6 +3,7 @@ import 'package:pilem/models/movie.dart';
 import 'package:pilem/screens/detail_screen.dart';
 import 'package:pilem/services/api_service.dart';
 
+//stateful bisa menyimpan data yang bisa berubah, misal hasil pencarian
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
   @override
