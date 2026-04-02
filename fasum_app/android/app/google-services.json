@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "1028270183571",
+    "project_id": "first-app-498ac",
+    "storage_bucket": "first-app-498ac.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1028270183571:android:5b6c5fac91626054f8a966",
+        "android_client_info": {
+          "package_name": "com.example.daftar_belanja"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTXpCFbLhaINfHR4Q98OqXyFM5cfl72RU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1028270183571:android:893f20f9dbc46bc1f8a966",
+        "android_client_info": {
+          "package_name": "com.example.fasum_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTXpCFbLhaINfHR4Q98OqXyFM5cfl72RU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1028270183571:android:b127830e19b7fb5cf8a966",
+        "android_client_info": {
+          "package_name": "com.example.wisata_candi_wasilah"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTXpCFbLhaINfHR4Q98OqXyFM5cfl72RU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
