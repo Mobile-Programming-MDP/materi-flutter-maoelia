@@ -5,39 +5,26 @@ import 'package:flutter/material.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
-    @override
+  @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-  Future<void> signOut(BuildContext context) async {
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    //testSetUser();
+  }
+
+  Future<void> signOut() async {
     await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => SignInScreen()),
-      (route) => false, //hapus semua route sebelumnya
+      (route) => false,
     );
-  }
-class _HomeScreenState extends State<HomeScreen> {
- 
-
-  String? _idToken = "";
-  String? _uid = "";
-  String? _email = "";
-  Future<void> getFirebasAuthUser() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      _uid = user.uid;
-      _email = user.email;
-      await user
-          .getIdToken(true)
-          .then(
-            (v) => {
-              setState(() {
-                _idToken = v;
-              }),
-            },
-          );
-    }
   }
 
   @override
@@ -45,25 +32,40 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Home Screen"),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
             onPressed: () {
-              signOut(context);
+              signOut();
             },
-            icon: const Icon(Icons.logout),
+            icon: Icon(Icons.logout),
+            tooltip: "Sign Out",
           ),
         ],
       ),
-      body: Center(
-        child: Column(
-          children: [
-            Text("You have been signed in with token id : ${_idToken!}"),
-            Text("CUrent User : ${_uid!}"),
-            Text("Current Email : ${_email}"),
-          ],
-        ),
+      body: Column(
+        children: [
+          Center(
+            child: Text(
+              "Hallo ${FirebaseAuth.instance.currentUser?.displayName}",
+            ),
+          ),
+          const Center(child: Text("You Have Been Signed In!")),
+        ],
       ),
     );
   }
+
+  // void testSetUser() async {
+  //   User? user = FirebaseAuth.instance.currentUser;
+
+  //   if (user != null) {
+  //     //await user.updateDisplayName("Nur Rachmat");
+  //     await user.updateProfile(
+  //       displayName: "Nur Rachmat",
+  //       photoURL:
+  //           "https://www.harapanrakyat.com/wp-content/uploads/2025/07/Kapten-Timnas-Indonesia-Jay-Idzes-Dilirik-5-Klub-Top-Eropa.jpg",
+  //     );
+  //     await user.reload();
+  //   }
+  // }
 }

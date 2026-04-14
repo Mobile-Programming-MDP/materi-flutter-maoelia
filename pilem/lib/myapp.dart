@@ -48,7 +48,7 @@ class _HttpExampleState extends State<HttpExample> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('ambil data dari API')),
+      appBar: AppBar(title: const Text('ambil data dari API')), 
       body: isLoading
           ? const Center(
               child: CircularProgressIndicator(),
