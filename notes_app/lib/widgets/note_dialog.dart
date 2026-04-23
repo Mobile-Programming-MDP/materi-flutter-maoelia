@@ -1,149 +1,200 @@
+import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:notes_app/models/note.dart';
 import 'package:notes_app/services/note_service.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class NoteDialog extends StatefulWidget {
-  const NoteDialog({super.key, this.note});
-
   final Note? note;
-
+  const NoteDialog({super.key, this.note});
   @override
   State<NoteDialog> createState() => _NoteDialogState();
 }
 
 class _NoteDialogState extends State<NoteDialog> {
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  //File? _imageFile;
+  String? _base64Image;
+  String? _latitude;
+  String? _longitude;
+
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Notes')),
-      body: const NoteList(),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (context) {
-              return const NoteDialog();
-            },
-          );
-        },
-        tooltip: 'Add Note',
-        child: const Icon(Icons.add),
-      ),
-    );
+  void initState() {
+    super.initState();
+    if (widget.note != null) {
+      _titleController.text = widget.note!.title;
+      _descriptionController.text = widget.note!.description;
+      _base64Image = widget.note!.imageBase64;
+      _latitude = widget.note!.latitude;
+      _longitude = widget.note!.longitude;
+    }
   }
-}
 
-class NoteList extends StatelessWidget {
-  const NoteList({super.key});
+  Future<void> _pickImage() async {
+    final pickedFile = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+    );
+
+    if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
+      String base64String = base64Encode(bytes);
+      setState(() {
+        _base64Image = base64String;
+        //_imageFile = File(pickedFile.path);
+      });
+      print("Base64 String: $base64String");
+    } else {
+      print("No image selected.");
+    }
+  }
+
+  Future<void> _getLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Layanan lokasi dinonaktifkan.")),
+        );
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.deniedForever ||
+            permission == LocationPermission.denied) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("Izin lokasi ditolak.")));
+          return;
+        }
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: LocationSettings(accuracy: LocationAccuracy.high),
+      ).timeout(const Duration(seconds: 10));
+
+      setState(() {
+        _latitude = position.latitude.toString();
+        _longitude = position.longitude.toString();
+      });
+    } catch (e) {
+      debugPrint('Failed to retrieve location: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Gagal mengambil lokasi.")));
+      setState(() {
+        _latitude = null;
+        _longitude = null;
+      });
+    }
+  }
+
+  Future<void> openMap() async {
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=${_latitude},${_longitude}',
+    );
+    final success = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!mounted) return;
+    if (!success) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Gagal membuka peta.")));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder(
-      stream: NoteService.getNoteList(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text('Belum ada catatan.'));
-        }
-
-        return ListView(
-          padding: const EdgeInsets.only(bottom: 80),
-          children: snapshot.data!.map((document) {
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              child: InkWell(
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      // Tidak menggunakan 'const' karena membawa data 'document'
-                      return NoteDialog(note: document);
-                    },
-                  );
-                },
-                child: Column(
-                  children: [
-                    document.imageUrl != null &&
-                            Uri.parse(document.imageUrl!).isAbsolute
-                        ? ClipRRect(
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(16),
-                              topRight: Radius.circular(16),
-                            ),
-                            child: Image.network(
-                              document.imageUrl!,
-                              fit: BoxFit.cover,
-                              alignment: Alignment.center,
-                              width: double.infinity,
-                              height: 150,
-                              // Menambahkan error builder jika gambar gagal dimuat
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(Icons.broken_image, size: 50),
-                            ),
-                          )
-                        : Container(),
-                    ListTile(
-                      title: Text(
-                        document.title,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(document.description),
-                      trailing: InkWell(
-                        onTap: () {
-                          _showDeleteDialog(context, document);
-                        },
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(
-                            vertical: 10,
-                            horizontal: 5,
-                          ),
-                          child: Icon(Icons.delete, color: Colors.red),
-                        ),
-                      ),
+    return AlertDialog(
+      title: Text(widget.note == null ? 'Add Notes' : 'Update Notes'),
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Title: ', textAlign: TextAlign.start),
+          TextField(controller: _titleController),
+          const Padding(
+            padding: EdgeInsets.only(top: 20),
+            child: Text('Description: '),
+          ),
+          TextField(controller: _descriptionController),
+          const Padding(
+            padding: EdgeInsets.only(top: 20),
+            child: Text('Image: '),
+          ),
+          Expanded(
+            child: _base64Image != null
+                ? Image.memory(
+                    base64Decode(_base64Image!),
+                    width: 250,
+                    height: 250,
+                    fit: BoxFit.cover,
+                  )
+                : Center(
+                    child: Icon(
+                      Icons.add_a_photo,
+                      size: 50,
+                      color: Colors.grey,
                     ),
-                  ],
+                  ),
+          ),
+          TextButton(onPressed: _pickImage, child: const Text('Pick Image')),
+          TextButton(
+            onPressed: _getLocation,
+            child: const Text('Get Current Location'),
+          ),
+          if (_latitude != null && _longitude != null)
+            Text('Location: ($_latitude, $_longitude)'),
+          if (_latitude != null && _longitude != null)
+            TextButton(onPressed: openMap, child: const Text('Open in Maps')),
+        ],
+      ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('Cancel'),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (widget.note == null) {
+              NoteService.addNote(
+                Note(
+                  title: _titleController.text,
+                  description: _descriptionController.text,
+                  imageBase64: _base64Image,
+                  latitude: _latitude,
+                  longitude: _longitude,
                 ),
-              ),
-            );
-          }).toList(),
-        );
-      },
-    );
-  }
-
-  // Helper method untuk dialog hapus agar kode lebih bersih
-  void _showDeleteDialog(BuildContext context, dynamic document) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Konfirmasi Hapus'),
-          content: Text('Yakin ingin menghapus data \'${document.title}\' ?'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            TextButton(
-              child: const Text('Hapus', style: TextStyle(color: Colors.red)),
-              onPressed: () {
-                NoteService.deleteNote(
-                  document,
-                ).whenComplete(() => Navigator.of(context).pop());
-              },
-            ),
-          ],
-        );
-      },
+              ).whenComplete(() {
+                Navigator.of(context).pop();
+              });
+            } else {
+              NoteService.updateNote(
+                Note(
+                  id: widget.note!.id,
+                  title: _titleController.text,
+                  description: _descriptionController.text,
+                  createdAt: widget.note!.createdAt,
+                  updatedAt: widget.note!.updatedAt,
+                  imageBase64: _base64Image,
+                  latitude: _latitude,
+                  longitude: _longitude,
+                ),
+              ).whenComplete(() => Navigator.of(context).pop());
+            }
+          },
+          child: Text(widget.note == null ? 'Add' : 'Update'),
+        ),
+      ],
     );
   }
 }
