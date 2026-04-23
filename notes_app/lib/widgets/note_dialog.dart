@@ -1,15 +1,19 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:notes_app/models/note.dart';
 import 'package:notes_app/services/note_service.dart';
-import 'package:notes_app/widgets/note_dialog.dart';
+import 'package:image_picker/image_picker.dart';
 
-class NoteListScreen extends StatefulWidget {
-  const NoteListScreen({super.key});
+class NoteDialog extends StatefulWidget {
+  const NoteDialog({super.key, this.note});
+
+  final Note? note;
 
   @override
-  State<NoteListScreen> createState() => _NoteListScreenState();
+  State<NoteDialog> createState() => _NoteDialogState();
 }
 
-class _NoteListScreenState extends State<NoteListScreen> {
+class _NoteDialogState extends State<NoteDialog> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
