@@ -1,101 +1,108 @@
+import 'dart:convert';
+
 import 'package:fasum_app/models/post.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fasum_app/screens/detail_screen.dart';
+import 'package:fasum_app/services/post_service.dart';
+import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 
-class PostService {
-  static final FirebaseFirestore _database = FirebaseFirestore.instance;
-  static final CollectionReference _postsCollection = _database.collection(
-    'posts',
-  );
+class PostListItem extends StatelessWidget {
+  final Post post;
+  final bool isOwner;
 
-  static Future<void> addPost(Post post) async {
-    Map<String, dynamic> newPost = {
-      'image': post.image,
-      'description': post.description,
-      'category': post.category,
-      'latitude': post.latitude,
-      'longitude': post.longitude,
-      'created_at': FieldValue.serverTimestamp(),
-      'updated_at': FieldValue.serverTimestamp(),
-      'user_id': post.userId,
-      'user_full_name': post.userFullName,
-    };
-    await _postsCollection.add(newPost);
-  }
+  const PostListItem({super.key, required this.post, required this.isOwner});
 
-  static Future<void> updatPost(Post post) async {
-    Map<String, dynamic> updatedPost = {
-      'image': post.image,
-      'description': post.description,
-      'category': post.category,
-      'latitude': post.latitude,
-      'longitude': post.longitude,
-      'created_at': post.createdAt,
-      'updated_at': FieldValue.serverTimestamp(),
-      'user_id': post.userId,
-      'user_full_name': post.userFullName,
-    };
-
-    await _postsCollection.doc(post.id).update(updatedPost);
-  }
-
-  static Future<void> deletePost(Post post) async {
-    await _postsCollection.doc(post.id).delete();
-  }
-
-  static Future<QuerySnapshot> retrievePost() {
-    return _postsCollection.get();
-  }
-
-  static Stream<List<Post>> getPostList() {
-    return _postsCollection.snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) {
-        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-        return Post(
-          id: doc.id,
-          image: data['image'],
-          description: data['description'],
-          category: data['category'],
-          createdAt: data['created_at'] != null
-              ? data['created_at'] as Timestamp
-              : null,
-          updatedAt: data['updated_at'] != null
-              ? data['updated_at'] as Timestamp
-              : null,
-          latitude: data['latitude'],
-          longitude: data['longitude'],
-          userId: data['user_id'],
-          userFullName: data['user_full_name'],
-        );
-      }).toList();
-    });
-  }
-
-  //1. Create function getPostListByCategory dgn parameter category
-  static Stream<List<Post>> getPostListByCategory(String? category) {
-    Query query = _postsCollection;
-    if (category != null) {
-      query = query.where('category', isEqualTo: category);
+  Future<void> _deletePost(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Post'),
+        content: const Text('Are you sure you want to delete this post?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      await PostService.deletePost(post);
     }
-    return query.snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) {
-        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-        return Post(
-          id: doc.id,
-          image: data['image'],
-          description: data['description'],
-          category: data['category'],
-          createdAt: data['created_at'] != null
-              ? data['created_at'] as Timestamp
-              : null,
-          updatedAt: data['updated_at'] != null
-              ? data['updated_at'] as Timestamp
-              : null,
-          latitude: data['latitude'],
-          longitude: data['longitude'],
-          userId: data['user_id'],
-          userFullName: data['user_full_name'],
-        );
-      }).toList();
-    });
+  }
+
+  //install dependency share_plus
+  //flutter pub add share_plus
+  void _sharePost() {
+    final text =
+        '${post.category ?? ''}\n${post.description ?? ''}\nPosted by: ${post.userFullName ?? ''}';
+    SharePlus.instance.share(ShareParams(text: text));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: ListTile(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => DetailScreen(post: post)),
+          );
+        },
+        leading: post.image != null && post.image!.isNotEmpty
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: Image.memory(
+                  base64Decode(post.image!),
+                  width: 56,
+                  height: 56,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      const Icon(Icons.broken_image, size: 56),
+                ),
+              )
+            : const Icon(Icons.article, size: 56),
+        title: Text(
+          post.category ?? 'No Category',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              post.description ?? '',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              post.userFullName ?? '',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        isThreeLine: true,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              onPressed: _sharePost,
+              icon: const Icon(Icons.share),
+              tooltip: 'Share',
+            ),
+            if (isOwner)
+              IconButton(
+                onPressed: () => _deletePost(context),
+                icon: const Icon(Icons.delete, color: Colors.red),
+                tooltip: 'Delete',
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }

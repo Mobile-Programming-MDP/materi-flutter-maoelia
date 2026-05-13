@@ -156,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (posts.isEmpty) {
                   return const Center(child: Text('No posts yet.'));
                 }
-                return RefreshIndicator(
+                 return RefreshIndicator(
                   onRefresh: () async {},
                   child: ListView.builder(
                     itemCount: posts.length,
